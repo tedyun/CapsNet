@@ -40,18 +40,22 @@ class CapsRoutingLayer(Layer):
         # X_tiled.shape = (None, n_input, n_output, dim_input)
         X_hat = K.map_fn(lambda x : K.batch_dot(self.W, x, axes = [3, 2]), elems = X_tile)
         # X_hat.shape = (None, n_input, n_output, dim_output)
+        X_hat_forward_only = K.stop_gradient(X_hat)
         b = K.zeros(shape = (None, self.n_input, self.n_output)) # TODO: does this work?
-        # TODO: Should I stop the gradient flow here?
         v = None
         for iter in range(self.n_routing):
             c = tf.nn.softmax(b, dim = 2)
             # c.shape = b.shape = (None, n_input, n_output)
-            s = K.batch_dot(c, X_hat, [1, 1])
-            v = squash(s)
-            # s.shape = v.shape = (None, n_output, dim_output)
-            if iter < self.n_routing - 1:
-                b = b + K.batch_dot(X_hat, v, [3, 2])
-            # b.shape = (None, n_input, n_output)
+            if iter == self.n_routing - 1:
+                s = K.batch_dot(c, X_hat, [1, 1])
+                v = squash(s)
+                # s.shape = v.shape = (None, n_output, dim_output)
+            else:
+                s = K.batch_dot(c, X_hat_forward_only, [1, 1])
+                v = squash(s)
+                # s.shape = v.shape = (None, n_output, dim_output)
+                b = b + K.batch_dot(X_hat_forward_only, v, [3, 2])
+                # b.shape = (None, n_input, n_output)
         return v
     
     def compute_output_shape(self, input_shape):
