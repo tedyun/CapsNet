@@ -4,9 +4,9 @@ Author: Ted Yun
 
 import numpy as np
 import tensorflow as tf
-from tf.keras import layers
-from capsroutinglayer import CapsRoutingLayer
-# from tf.keras import backend as K
+from tf.keras import layers, models
+from capsroutinglayer import CapsRoutingLayer, CapsLengthLayer
+from tf.keras import backend as K
 # import matplotlib.pyplot as plt
 
 class CapsNet():
@@ -35,6 +35,19 @@ class CapsNet():
             strides = (2, 2), padding = 'valid', activation = None)(conv1)
         primary_caps = layers.Reshape(target_shape = [-1, dim_caps1])(primary_caps_conv)
         digit_caps = CapsRoutingLayer(n_output = n_class, dim_output = dim_caps2, n_routing = n_routing)(primary_caps)
+        caps_output = CapsLengthLayer()(digit_caps)
+
+        return caps_output
+    
+    def margin_loss(self):
+        # TODO
+    
+    def build_decoder_model(self):
+        decoder_model = models.Sequential()
+        decoder_model.add(layers.Dense(512, activation = 'relu', input_shape = (dim_caps2 * n_class, )))
+        decoder_model.add(layers.Dense(1024, activation = 'relu'))
+        decoder_model.add(layers.Dense(K.prod(X_shape), activation = 'sigmoid'))
+        return decoder_model
     
     def train(self):
         # TODO

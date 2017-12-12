@@ -11,7 +11,7 @@ from tf.keras import backend as K
 
 def squash(X, axis = None):
     X_norm = tf.norm(X, axis = axis, keep_dims = True)
-    return X_norm / (1 + tf.square(x_norm)) * X
+    return X_norm / (1 + tf.square(X_norm)) * X
 
 class CapsRoutingLayer(Layer):
     def __init__(self, n_output, dim_output, n_routing = 3, **kwargs):
@@ -60,3 +60,13 @@ class CapsRoutingLayer(Layer):
     
     def compute_output_shape(self, input_shape):
         return (input_shape[0], self.n_output, self.dim_output)
+
+class CapsLengthLayer(Layer):
+    """
+    Outputs the lengths of capsule vectors. Has no weights.
+    """
+    def call(self, X):
+        # X.shape = (None, n_input, dim_input)
+        return tf.norm(X, axis = 2, keep_dims = False)
+    def compute_output_shape(self, input_shape):
+        return input_shape[:-1]
