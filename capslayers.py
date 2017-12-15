@@ -17,10 +17,16 @@ def squash(x, axis = None):
     return x_norm / (1 + tf.square(x_norm)) * x
 
 class CapsRoutingLayer(Layer):
+    """
+    A capsule-to-capsule layer using the "dynamic routing"
+    """
     def __init__(self, n_output, dim_output, n_routing = 3, **kwargs):
         self.n_output = n_output
         self.dim_output = dim_output
         self.n_routing = n_routing
+        self.n_input = None
+        self.dim_input = None
+        self.w_matrix = None
         super(CapsRoutingLayer, self).__init__(**kwargs)
     
     def build(self, input_shape):
@@ -32,16 +38,19 @@ class CapsRoutingLayer(Layer):
         self.n_input = n_input
         self.dim_input = dim_input
         # Create a trainable weight variable for this layer.
-        self.W = self.add_weight(name = 'W', shape = (n_input, self.n_output, self.dim_output, dim_input),
+        self.w_matrix = self.add_weight(name = 'W', shape = (n_input, self.n_output, self.dim_output, dim_input),
             initializer = 'glorot_uniform', trainable = True)
         super(CapsRoutingLayer, self).build(input_shape)
     
     def call(self, x):
         # x.shape = (None, n_input, dim_input)
+        print("x.shape: " + str(x.shape))
         x_reshape = K.reshape(x, (-1, self.n_input, 1, self.dim_input))
+        print("x_reshape.shape: " + str(x_reshape.shape))
         x_tile = K.tile(x_reshape, (1, 1, self.n_output, 1))
-        # x_tiled.shape = (None, n_input, n_output, dim_input)
-        x_hat = K.map_fn(lambda x : K.batch_dot(self.W, x, axes = [3, 2]), elems = x_tile)
+        print("x_tile.shape: " + str(x_tile.shape))
+        # x_tile.shape = (None, n_input, n_output, dim_input)
+        x_hat = K.map_fn(lambda x : K.batch_dot(self.w_matrix, x, axes = [3, 2]), elems = x_tile)
         # x_hat.shape = (None, n_input, n_output, dim_output)
         x_hat_forward_only = K.stop_gradient(x_hat)
         b = K.zeros(shape = (None, self.n_input, self.n_output)) # TODO: does this work?

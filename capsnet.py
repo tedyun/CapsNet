@@ -7,6 +7,7 @@ import tensorflow as tf
 from keras import layers, models, optimizers
 from capslayers import CapsRoutingLayer, CapsLengthLayer
 from keras import backend as K
+from keras import utils as Kutils
 # import matplotlib.pyplot as plt
 
 class CapsNet():
@@ -84,7 +85,12 @@ class CapsNet():
 
 def load_mnist():
     from keras.datasets import mnist
-    return mnist.load_data()
+    (x_train, y_train), (x_test, y_test) = mnist.load_data()
+    x_train = np.reshape(x_train, (-1, 28, 28, 1)).astype('float32') / 255
+    x_test = np.reshape(x_test, (-1, 28, 28, 1)).astype('float32') / 255
+    y_train = Kutils.to_categorical(y_train, num_classes = 10)
+    y_test = Kutils.to_categorical(y_test, num_classes = 10)
+    return (x_train, y_train), (x_test, y_test)
 
 if __name__ == "__main__":
     data_train, data_test = load_mnist()
