@@ -48,12 +48,13 @@ class CapsRoutingLayer(Layer):
         x_reshape = K.reshape(x, (-1, self.n_input, 1, self.dim_input))
         print("x_reshape.shape: " + str(x_reshape.shape))
         x_tile = K.tile(x_reshape, (1, 1, self.n_output, 1))
-        print("x_tile.shape: " + str(x_tile.shape))
         # x_tile.shape = (None, n_input, n_output, dim_input)
-        x_hat = K.map_fn(lambda x : K.batch_dot(self.w_matrix, x, axes = [3, 2]), elems = x_tile)
+        print("x_tile.shape: " + str(x_tile.shape))
+        x_hat = K.map_fn(lambda x : K.batch_dot(x, self.w_matrix, axes = [2, 3]), x_tile)
         # x_hat.shape = (None, n_input, n_output, dim_output)
+        print("x_hat.shape: " + str(x_hat.shape))
         x_hat_forward_only = K.stop_gradient(x_hat)
-        b = K.zeros(shape = (None, self.n_input, self.n_output)) # TODO: does this work?
+        b = tf.zeros(shape = (tf.shape(x_hat)[0], self.n_input, self.n_output))
         v = None
         for it in range(self.n_routing):
             c = tf.nn.softmax(b, dim = 2)
@@ -66,7 +67,7 @@ class CapsRoutingLayer(Layer):
                 s = K.batch_dot(c, x_hat_forward_only, [1, 1])
                 v = squash(s)
                 # s.shape = v.shape = (None, n_output, dim_output)
-                b = b + K.batch_dot(x_hat_forward_only, v, [3, 2])
+                b = b + K.batch_dot(v, x_hat_forward_only, [2, 3])
                 # b.shape = (None, n_input, n_output)
         return v
     
