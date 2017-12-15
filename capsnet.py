@@ -5,7 +5,7 @@ Author: Ted Yun
 import numpy as np
 import tensorflow as tf
 from keras import layers, models, optimizers
-from capsroutinglayer import CapsRoutingLayer, CapsLengthLayer
+from capslayers import CapsRoutingLayer, CapsLengthLayer
 from keras import backend as K
 # import matplotlib.pyplot as plt
 
