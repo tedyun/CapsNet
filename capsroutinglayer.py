@@ -4,12 +4,15 @@ Author: Ted Yun
 
 import numpy as np
 import tensorflow as tf
-from tf.keras import layers
-from tf.keras.engine.topology import Layer
-from tf.keras import backend as K
+from keras import layers
+from keras.engine.topology import Layer
+from keras import backend as K
 # import matplotlib.pyplot as plt
 
 def squash(x, axis = None):
+    """
+    The "squash" function
+    """
     x_norm = tf.norm(x, axis = axis, keep_dims = True)
     return x_norm / (1 + tf.square(x_norm)) * x
 
@@ -43,10 +46,10 @@ class CapsRoutingLayer(Layer):
         x_hat_forward_only = K.stop_gradient(x_hat)
         b = K.zeros(shape = (None, self.n_input, self.n_output)) # TODO: does this work?
         v = None
-        for iter in range(self.n_routing):
+        for it in range(self.n_routing):
             c = tf.nn.softmax(b, dim = 2)
             # c.shape = b.shape = (None, n_input, n_output)
-            if iter == self.n_routing - 1:
+            if it == self.n_routing - 1:
                 s = K.batch_dot(c, x_hat, [1, 1])
                 v = squash(s)
                 # s.shape = v.shape = (None, n_output, dim_output)

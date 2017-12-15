@@ -4,9 +4,9 @@ Author: Ted Yun
 
 import numpy as np
 import tensorflow as tf
-from tf.keras import layers, models, optimizers
+from keras import layers, models, optimizers
 from capsroutinglayer import CapsRoutingLayer, CapsLengthLayer
-from tf.keras import backend as K
+from keras import backend as K
 # import matplotlib.pyplot as plt
 
 class CapsNet():
@@ -14,7 +14,7 @@ class CapsNet():
     CapsNet class
     """
 
-    x_shape = #TODO
+    x_shape = None
     n_ch1 = 256
     n_ch2 = 32
     dim_caps1 = 8
@@ -23,21 +23,25 @@ class CapsNet():
     reconstruction_loss_ratio = 0.00005
     n_routing = 3
     n_class = 10
+    loss_m_plus = 0.9 # m+ in margin loss
+    loss_m_minus = 0.1 # m- in margin loss
+    loss_lambda = 0.5
 
-    def __init__(self, x_shape, n_ch1 = 256, n_ch2 = 32, dim_caps1 = 8, dim_caps2 = 16, n_kernel = 9, n_routing = 3, reconstruction_loss_ratio = 0.00005):
+    def __init__(self, input_shape, n_ch1 = 256, n_ch2 = 32, dim_caps1 = 8, dim_caps2 = 16, n_kernel = 9, n_routing = 3, reconstruction_loss_ratio = 0.00005):
+        self.x_shape = input_shape
         self.train_model = None
 
     def build_model(self):
-        x = layers.Input(shape = x_shape)
-        conv1 = layers.Conv2D(filters = n_ch1, kernel_size = n_kernel, strides = (1, 1),
+        x = layers.Input(shape = self.x_shape)
+        conv1 = layers.Conv2D(filters = self.n_ch1, kernel_size = self.n_kernel, strides = (1, 1),
             padding = 'valid', activation = 'relu')(x)
-        primary_caps_conv = layers.Conv2D(filters = n_ch2 * dim_caps1, kernel_size = n_kernel,
+        primary_caps_conv = layers.Conv2D(filters = self.n_ch2 * self.dim_caps1, kernel_size = self.n_kernel,
             strides = (2, 2), padding = 'valid', activation = None)(conv1)
-        primary_caps = layers.Reshape(target_shape = [-1, dim_caps1])(primary_caps_conv)
-        digit_caps = CapsRoutingLayer(n_output = n_class, dim_output = dim_caps2, n_routing = n_routing)(primary_caps)
+        primary_caps = layers.Reshape(target_shape = [-1, self.dim_caps1])(primary_caps_conv)
+        digit_caps = CapsRoutingLayer(n_output = self.n_class, dim_output = self.dim_caps2, n_routing = self.n_routing)(primary_caps)
         caps_output = CapsLengthLayer()(digit_caps)
         
-        y = layers.Input(shape = (n_class, ))
+        y = layers.Input(shape = (self.n_class, ))
         masked_digit_caps = self.zero_mask(digit_caps, y)
 
         decoder_model = self.build_decoder_model()
@@ -46,8 +50,14 @@ class CapsNet():
 
         self.train_model = train_model
     
-    def margin_loss(self):
-        # TODO
+    def margin_loss(self, y_label, y_pred_norm):
+        """
+        Returns the average margin loss of the batch
+        """
+        # loss_k.shape = (None, n_class)
+        loss_k = y_label * K.square(K.maximum(0, self.loss_m_plus - y_pred_norm)) + \
+            self.loss_lambda * (1 - y_label) * K.square(K.maximum(0, y_pred_norm - self.loss_m_minus))
+        return K.mean(K.sum(loss_k, axis = 1))
     
     def zero_mask(self, caps, mask):
         # caps.shape = (None, n_caps, dim_caps)
@@ -58,24 +68,25 @@ class CapsNet():
         decoder_model = models.Sequential()
         decoder_model.add(layers.Dense(512, activation = 'relu', input_shape = (dim_caps2 * n_class, )))
         decoder_model.add(layers.Dense(1024, activation = 'relu'))
-        decoder_model.add(layers.Dense(K.prod(X_shape), activation = 'sigmoid'))
+        decoder_model.add(layers.Dense(K.prod(self.x_shape), activation = 'sigmoid'))
         return decoder_model
     
-    def train(self, data_train):
+    def train(self, data_train, batch_size = 100, epochs = 1):
         x_train, y_train = data_train
         if self.train_model is None:
             self.build_model()
         self.train_model.compile(optimizer = optimizers.Adam(), loss = [margin_loss, 'mse'],
             loss_weights = [1, reconstruction_loss_ratio], metrics = ['accuracy'])
-        # TODO
-        # self.train_model.fit(...)
-    
-    def predict(self):
-        # TODO
+        self.train_model.fit([x_train, y_train], [y_train, x_train], batch_size = batch_size, epochs = epochs, validation_split = 0.1)
+        return self.train_model
 
-def load_mnist:
+
+
+def load_mnist():
     from keras.datasets import mnist
     return mnist.load_data()
 
 if __name__ == "__main__":
     data_train, data_test = load_mnist()
+    capsnet = CapsNet(input_shape = data_train[0].shape[1:])
+    capsnet.train(data_train)
