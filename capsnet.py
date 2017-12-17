@@ -57,12 +57,15 @@ class CapsNet():
         """
         # loss_k.shape = (None, n_class)
         loss_k = y_label * K.square(K.maximum(0, self.loss_m_plus - y_pred_norm)) + \
-            self.loss_lambda * (1 - y_label) * K.square(K.maximum(0, y_pred_norm - self.loss_m_minus))
+            self.loss_lambda * (1 - y_label) * K.square(K.maximum(0, y_pred_norm - \
+            self.loss_m_minus))
         return K.mean(K.sum(loss_k, axis = 1))
     
     def zero_mask(self, caps, mask):
         # caps.shape = (None, n_caps, dim_caps)
         # mask.shape = (None, n_caps) as one-hot vector
+        print("caps.shape: " + str(caps.shape))
+        print("mask.shape: " + str(mask.shape))
         return K.batch_flatten(caps * K.expand_dims(mask, -1))
     
     def build_decoder_model(self):
