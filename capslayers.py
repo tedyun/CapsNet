@@ -44,7 +44,7 @@ class CapsRoutingLayer(Layer):
     
     def call(self, x):
         # x.shape = (None, n_input, dim_input)
-        print("x.shape: " + str(x.shape))
+        print("CapsRoutingLayer input shape: " + str(x.shape))
         x_reshape = K.reshape(x, (-1, self.n_input, 1, self.dim_input))
         print("x_reshape.shape: " + str(x_reshape.shape))
         x_tile = K.tile(x_reshape, (1, 1, self.n_output, 1))
@@ -59,6 +59,7 @@ class CapsRoutingLayer(Layer):
         for it in range(self.n_routing):
             c = tf.nn.softmax(b, dim = 2)
             # c.shape = b.shape = (None, n_input, n_output)
+            print("c.shape: " + str(c.shape))
             if it == self.n_routing - 1:
                 s = K.batch_dot(c, x_hat, [1, 1])
                 v = squash(s)
@@ -69,6 +70,7 @@ class CapsRoutingLayer(Layer):
                 # s.shape = v.shape = (None, n_output, dim_output)
                 b = b + K.batch_dot(v, x_hat_forward_only, [2, 3])
                 # b.shape = (None, n_input, n_output)
+        print("CapsRoutingLayer output shape: " + str(v.shape))
         return v
     
     def compute_output_shape(self, input_shape):

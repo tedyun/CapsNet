@@ -43,6 +43,11 @@ class CapsNet():
         caps_output = CapsLengthLayer()(digit_caps)
         
         y = layers.Input(shape = (self.n_class, ))
+
+        # digit_caps.shape = (None, n_caps, dim_caps)
+        print("digit_caps.shape: " + str(digit_caps.shape))
+        # y.shape = (None, n_caps) as one-hot vector
+        print("y.shape: " + str(y.shape))
         masked_digit_caps = self.zero_mask(digit_caps, y)
 
         decoder_model = self.build_decoder_model()
@@ -63,9 +68,9 @@ class CapsNet():
     
     def zero_mask(self, caps, mask):
         # caps.shape = (None, n_caps, dim_caps)
+        # print("caps.shape: " + str(caps.shape))
         # mask.shape = (None, n_caps) as one-hot vector
-        print("caps.shape: " + str(caps.shape))
-        print("mask.shape: " + str(mask.shape))
+        # print("mask.shape: " + str(mask.shape))
         return K.batch_flatten(caps * K.expand_dims(mask, -1))
     
     def build_decoder_model(self):
