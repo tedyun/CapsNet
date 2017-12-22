@@ -45,12 +45,13 @@ class CapsRoutingLayer(Layer):
     def call(self, x):
         # x.shape = (None, n_input, dim_input)
         print("CapsRoutingLayer input shape: " + str(x.shape))
-        x_reshape = K.reshape(x, (-1, self.n_input, 1, self.dim_input))
+        x_reshape = K.expand_dims(x, axis = 2)
         print("x_reshape.shape: " + str(x_reshape.shape))
+        # x_reshape.shape = (None, n_input, 1, dim_input)
         x_tile = K.tile(x_reshape, (1, 1, self.n_output, 1))
         # x_tile.shape = (None, n_input, n_output, dim_input)
         print("x_tile.shape: " + str(x_tile.shape))
-        x_hat = K.map_fn(lambda x : K.batch_dot(x, self.w_matrix, axes = [2, 3]), x_tile)
+        x_hat = K.map_fn(lambda z : K.batch_dot(z, self.w_matrix, axes = [2, 3]), x_tile)
         # x_hat.shape = (None, n_input, n_output, dim_output)
         print("x_hat.shape: " + str(x_hat.shape))
         x_hat_forward_only = K.stop_gradient(x_hat)
@@ -61,8 +62,9 @@ class CapsRoutingLayer(Layer):
             # c.shape = b.shape = (None, n_input, n_output)
             print("c.shape: " + str(c.shape))
             if it == self.n_routing - 1:
-                s = K.batch_dot(c, x_hat, [1, 1])
+                s = K.batch_dot(c, x_hat, [[1], [1]])
                 v = squash(s)
+                print("s.shape: " + str(s.shape))
                 # s.shape = v.shape = (None, n_output, dim_output)
             else:
                 s = K.batch_dot(c, x_hat_forward_only, [1, 1])

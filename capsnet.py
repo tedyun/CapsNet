@@ -75,7 +75,7 @@ class CapsNet():
     
     def build_decoder_model(self):
         decoder_model = models.Sequential()
-        decoder_model.add(layers.Dense(512, activation = 'relu', input_shape = (dim_caps2 * n_class, )))
+        decoder_model.add(layers.Dense(512, activation = 'relu', input_shape = (self.dim_caps2 * n_class, )))
         decoder_model.add(layers.Dense(1024, activation = 'relu'))
         decoder_model.add(layers.Dense(K.prod(self.x_shape), activation = 'sigmoid'))
         return decoder_model
