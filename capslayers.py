@@ -57,18 +57,20 @@ class CapsRoutingLayer(Layer):
         x_hat_forward_only = K.stop_gradient(x_hat)
         b = tf.zeros(shape = (tf.shape(x_hat)[0], self.n_input, self.n_output))
         v = None
+        s = None
         for it in range(self.n_routing):
             c = tf.nn.softmax(b, dim = 2)
             # c.shape = b.shape = (None, n_input, n_output)
             print("c.shape: " + str(c.shape))
             if it == self.n_routing - 1:
-                s = K.batch_dot(c, x_hat, [[1], [1]])
+                s = K.batch_dot(tf.transpose(c, [0, 2, 1]), tf.transpose(x_hat, [0, 2, 1, 3]), axes = [2, 2])
                 v = squash(s)
                 print("s.shape: " + str(s.shape))
                 # s.shape = v.shape = (None, n_output, dim_output)
             else:
-                s = K.batch_dot(c, x_hat_forward_only, [1, 1])
+                s = K.batch_dot(tf.transpose(c, [0, 2, 1]), tf.transpose(x_hat_forward_only, [0, 2, 1, 3]), axes = [2, 2])
                 v = squash(s)
+                print("s.shape: " + str(s.shape))
                 # s.shape = v.shape = (None, n_output, dim_output)
                 b = b + K.batch_dot(v, x_hat_forward_only, [2, 3])
                 # b.shape = (None, n_input, n_output)
