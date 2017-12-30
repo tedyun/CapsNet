@@ -56,6 +56,20 @@ class CapsNet():
 
         self.train_model = train_model
     
+    def zero_mask(self, caps, mask):
+        # caps.shape = (None, n_caps, dim_caps)
+        # print("caps.shape: " + str(caps.shape))
+        # mask.shape = (None, n_caps) as one-hot vector
+        # print("mask.shape: " + str(mask.shape))
+        return K.batch_flatten(caps * K.expand_dims(mask))
+    
+    def build_decoder_model(self):
+        decoder_model = models.Sequential()
+        decoder_model.add(layers.Dense(512, activation = 'relu', input_shape = (self.dim_caps2 * self.n_class, )))
+        decoder_model.add(layers.Dense(1024, activation = 'relu'))
+        decoder_model.add(layers.Dense(np.prod(self.x_shape), activation = 'sigmoid'))
+        return decoder_model
+    
     def margin_loss(self, y_label, y_pred_norm):
         """
         Returns the average margin loss of the batch
@@ -66,20 +80,6 @@ class CapsNet():
             self.loss_m_minus))
         return K.mean(K.sum(loss_k, axis = 1))
     
-    def zero_mask(self, caps, mask):
-        # caps.shape = (None, n_caps, dim_caps)
-        # print("caps.shape: " + str(caps.shape))
-        # mask.shape = (None, n_caps) as one-hot vector
-        # print("mask.shape: " + str(mask.shape))
-        return K.batch_flatten(caps * K.expand_dims(mask, -1))
-    
-    def build_decoder_model(self):
-        decoder_model = models.Sequential()
-        decoder_model.add(layers.Dense(512, activation = 'relu', input_shape = (self.dim_caps2 * n_class, )))
-        decoder_model.add(layers.Dense(1024, activation = 'relu'))
-        decoder_model.add(layers.Dense(K.prod(self.x_shape), activation = 'sigmoid'))
-        return decoder_model
-    
     def train(self, data_train, batch_size = 100, epochs = 1):
         x_train, y_train = data_train
         if self.train_model is None:
@@ -88,8 +88,6 @@ class CapsNet():
             loss_weights = [1, reconstruction_loss_ratio], metrics = ['accuracy'])
         self.train_model.fit([x_train, y_train], [y_train, x_train], batch_size = batch_size, epochs = epochs, validation_split = 0.1)
         return self.train_model
-
-
 
 def load_mnist():
     from keras.datasets import mnist
