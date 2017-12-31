@@ -5,10 +5,25 @@ Author: Ted Yun
 import numpy as np
 import tensorflow as tf
 from keras import layers, models, optimizers
+from keras.engine.topology import Layer
 from capslayers import CapsRoutingLayer, CapsLengthLayer
 from keras import backend as K
 from keras import utils as Kutils
 # import matplotlib.pyplot as plt
+
+class ZeroMask(Layer):
+    """
+    A Simple Layer for Zero-Masking
+    """
+    def __init(self, **kwargs):
+        super(ZeroMask, self).__init__(**kwargs)
+
+    def call(self, input):
+        x, mask = input
+        return K.batch_flatten(x * K.expand_dims(mask))
+
+    def compute_output_shape(self, input_shape):
+        return (input_shape[0][0], input_shape[0][1] * input_shape[0][2])
 
 class CapsNet():
     """
@@ -48,7 +63,7 @@ class CapsNet():
         print("digit_caps.shape: " + str(digit_caps.shape))
         # y.shape = (None, n_caps) as one-hot vector
         print("y.shape: " + str(y.shape))
-        masked_digit_caps = self.zero_mask(digit_caps, y)
+        masked_digit_caps = ZeroMask()([digit_caps, y])
 
         decoder_model = self.build_decoder_model()
 
@@ -75,8 +90,8 @@ class CapsNet():
         Returns the average margin loss of the batch
         """
         # loss_k.shape = (None, n_class)
-        loss_k = y_label * K.square(K.maximum(0, self.loss_m_plus - y_pred_norm)) + \
-            self.loss_lambda * (1 - y_label) * K.square(K.maximum(0, y_pred_norm - \
+        loss_k = y_label * K.square(K.maximum(0.0, self.loss_m_plus - y_pred_norm)) + \
+            self.loss_lambda * (1.0 - y_label) * K.square(K.maximum(0.0, y_pred_norm - \
             self.loss_m_minus))
         return K.mean(K.sum(loss_k, axis = 1))
     
@@ -84,8 +99,8 @@ class CapsNet():
         x_train, y_train = data_train
         if self.train_model is None:
             self.build_model()
-        self.train_model.compile(optimizer = optimizers.Adam(), loss = [margin_loss, 'mse'],
-            loss_weights = [1, reconstruction_loss_ratio], metrics = ['accuracy'])
+        self.train_model.compile(optimizer = optimizers.Adam(), loss = [self.margin_loss, 'mse'],
+            loss_weights = [1, self.reconstruction_loss_ratio], metrics = ['accuracy'])
         self.train_model.fit([x_train, y_train], [y_train, x_train], batch_size = batch_size, epochs = epochs, validation_split = 0.1)
         return self.train_model
 
