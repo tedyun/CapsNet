@@ -101,7 +101,8 @@ class CapsNet():
             self.build_model()
         self.train_model.compile(optimizer = optimizers.Adam(), loss = [self.margin_loss, 'mse'],
             loss_weights = [1, self.reconstruction_loss_ratio], metrics = ['accuracy'])
-        self.train_model.fit([x_train, y_train], [y_train, x_train], batch_size = batch_size, epochs = epochs, validation_split = 0.1)
+        self.train_model.fit([x_train, y_train], [y_train, x_train], batch_size = batch_size,
+            epochs = epochs, validation_split = 0.1)
         return self.train_model
 
 def load_mnist():
