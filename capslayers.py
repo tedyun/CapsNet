@@ -33,7 +33,7 @@ class CapsRoutingLayer(Layer):
         """
         The input shape is (None, (number of input capsules), (dimension of input capsules))
         """
-        print("Building a Capsule routing layer with input shape: ", input_shape)
+        # print("Building a Capsule routing layer with input shape: ", input_shape)
         _, n_input, dim_input = input_shape
         self.n_input = n_input
         self.dim_input = dim_input
@@ -44,18 +44,18 @@ class CapsRoutingLayer(Layer):
     
     def call(self, x):
         # x.shape = (None, n_input, dim_input)
-        print("CapsRoutingLayer input shape: " + str(x.shape))
+        # print("CapsRoutingLayer input shape: " + str(x.shape))
         x_reshape = K.expand_dims(x, axis = 2)
-        print("x_reshape.shape: " + str(x_reshape.shape))
+        # print("x_reshape.shape: " + str(x_reshape.shape))
         # x_reshape.shape = (None, n_input, 1, dim_input)
         x_tile = K.tile(x_reshape, (1, 1, self.n_output, 1))
         # x_tile.shape = (None, n_input, n_output, dim_input)
-        print("x_tile.shape: " + str(x_tile.shape))
+        # print("x_tile.shape: " + str(x_tile.shape))
         x_hat = K.map_fn(lambda z : K.batch_dot(z, self.w_matrix, axes = [2, 3]), x_tile)
         # x_hat.shape = (None, n_input, n_output, dim_output)
         x_hat = tf.transpose(x_hat, [0, 2, 1, 3])
         # x_hat.shape = (None, n_output, n_input, dim_output)
-        print("x_hat.shape: " + str(x_hat.shape))
+        # print("x_hat.shape: " + str(x_hat.shape))
         x_hat_forward_only = K.stop_gradient(x_hat)
         b = tf.zeros(shape = (tf.shape(x_hat)[0], self.n_output, self.n_input))
         v = None
@@ -63,20 +63,20 @@ class CapsRoutingLayer(Layer):
         for it in range(self.n_routing):
             c = tf.nn.softmax(b, dim = 2)
             # c.shape = b.shape = (None, n_output, n_input)
-            print("c.shape: " + str(c.shape))
+            # print("c.shape: " + str(c.shape))
             if it == self.n_routing - 1:
                 s = K.batch_dot(c, x_hat, axes = [2, 2])
                 v = squash(s)
-                print("s.shape: " + str(s.shape))
+                # print("s.shape: " + str(s.shape))
                 # s.shape = v.shape = (None, n_output, dim_output)
             else:
                 s = K.batch_dot(c, x_hat_forward_only, axes = [2, 2])
                 v = squash(s)
-                print("s.shape: " + str(s.shape))
+                # print("s.shape: " + str(s.shape))
                 # s.shape = v.shape = (None, n_output, dim_output)
                 b = b + K.batch_dot(v, x_hat_forward_only, [2, 3])
                 # b.shape = (None, n_input, n_output)
-        print("CapsRoutingLayer output shape: " + str(v.shape))
+        # print("CapsRoutingLayer output shape: " + str(v.shape))
         return v
     
     def compute_output_shape(self, input_shape):
