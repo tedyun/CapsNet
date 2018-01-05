@@ -83,6 +83,7 @@ class CapsNet():
         decoder_model.add(layers.Dense(512, activation = 'relu', input_shape = (self.dim_caps2 * self.n_class, )))
         decoder_model.add(layers.Dense(1024, activation = 'relu'))
         decoder_model.add(layers.Dense(np.prod(self.x_shape), activation = 'sigmoid'))
+        decoder_model.add(layers.Reshape(self.x_shape))
         return decoder_model
     
     def margin_loss(self, y_label, y_pred_norm):
