@@ -9,4 +9,4 @@ Need python 3.5 or above. Install the following python packages: `tensorflow, ke
 
 # Reference
 * https://arxiv.org/abs/1710.09829
-* Referred to some functions in this repository https://github.com/XifengGuo/CapsNet-Keras
+* Referred to some functions in Xifeng Guo's implementation - https://github.com/XifengGuo/CapsNet-Keras
