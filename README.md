@@ -8,5 +8,5 @@ Need python 3.5 or above. Install the following python packages: `tensorflow, ke
 `$ python capsnet.py`
 
 # Reference
-* https://arxiv.org/abs/1710.09829
+* Sabour, Frosst, Hinton. Dynamic Routing Between Capsules. 2017. https://arxiv.org/abs/1710.09829
 * Referred to some functions in Xifeng Guo's implementation - https://github.com/XifengGuo/CapsNet-Keras
