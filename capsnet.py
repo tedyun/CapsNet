@@ -25,6 +25,21 @@ class ZeroMask(Layer):
     def compute_output_shape(self, input_shape):
         return (input_shape[0][0], input_shape[0][1] * input_shape[0][2])
 
+class ZeroMaskMaxLength(Layer):
+    """
+    A Simple Layer for Zero-Masking by the maximum length of the input capsule vector
+    """
+    def __init(self, **kwargs):
+        super(ZeroMaskMaxLength, self).__init__(**kwargs)
+
+    def call(self, x):
+        x_norm = tf.norm(x, axis = 2, keep_dims = False)
+        mask = K.one_hot(indices = K.argmax(x_norm, axis = 1), num_classes = tf.shape(x)[1])
+        return K.batch_flatten(x * K.expand_dims(mask))
+
+    def compute_output_shape(self, input_shape):
+        return (input_shape[0], input_shape[1] * input_shape[2])
+
 class CapsNet():
     """
     CapsNet class
@@ -46,8 +61,9 @@ class CapsNet():
     def __init__(self, input_shape, n_ch1 = 256, n_ch2 = 32, dim_caps1 = 8, dim_caps2 = 16, n_kernel = 9, n_routing = 3, reconstruction_loss_ratio = 0.00005):
         self.x_shape = input_shape
         self.train_model = None
+        self.test_model = None
 
-    def build_model(self):
+    def build_model(self, testing = False):
         x = layers.Input(shape = self.x_shape)
         conv1 = layers.Conv2D(filters = self.n_ch1, kernel_size = self.n_kernel, strides = (1, 1),
             padding = 'valid', activation = 'relu')(x)
@@ -63,13 +79,17 @@ class CapsNet():
         # print("digit_caps.shape: " + str(digit_caps.shape))
         # y.shape = (None, n_caps) as one-hot vector
         # print("y.shape: " + str(y.shape))
-        masked_digit_caps = ZeroMask()([digit_caps, y])
 
-        decoder_model = self.build_decoder_model()
-
-        train_model = models.Model([x, y], [caps_output, decoder_model(masked_digit_caps)])
-
-        self.train_model = train_model
+        if testing:
+            masked_digit_caps_test = ZeroMaskMaxLength()(digit_caps)
+            test_model = models.Model(x, masked_digit_caps_test)
+            # test things
+            self.test_model = test_model
+        else:
+            masked_digit_caps = ZeroMask()([digit_caps, y])
+            decoder_model = self.build_decoder_model()
+            train_model = models.Model([x, y], [caps_output, decoder_model(masked_digit_caps)])
+            self.train_model = train_model
     
     def zero_mask(self, caps, mask):
         # caps.shape = (None, n_caps, dim_caps)
@@ -106,6 +126,14 @@ class CapsNet():
             epochs = epochs, validation_split = 0.1)
         self.train_model.save_weights(file_name + ".h5")
         return self.train_model
+    
+    def test(self, data_test, batch_size = 100, file_name = "trained_model_weights"):
+        x_test, y_test = data_test
+        if self.test_model is None:
+            self.build_model(testing = True)
+        y_pred = self.test_model.predict(x_test, batch_size = batch_size)
+        print('Test acc:', np.sum(np.argmax(y_pred, 1) == np.argmax(y_test, 1))/y_test.shape[0])
+
 
 def load_mnist():
     from keras.datasets import mnist
@@ -117,11 +145,15 @@ def load_mnist():
     return (x_train, y_train), (x_test, y_test)
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description = "CapsNet Training")
+    parser = argparse.ArgumentParser(description = "CapsNet")
     parser.add_argument('--epochs', type = int, default = 1)
     parser.add_argument('--filename', default = "trained_model_weights")
+    parser.add_argument('--testing', type = bool, default = False)
     args = parser.parse_args()
 
     data_train, data_test = load_mnist()
     capsnet = CapsNet(input_shape = data_train[0].shape[1:])
-    capsnet.train(data_train, epochs = args.epochs)
+    if args.testing:
+        capsnet.test(data_test, file_name = args.filename)
+    else:
+        capsnet.train(data_train, epochs = args.epochs, file_name = args.filename)
