@@ -9,7 +9,7 @@ from keras.engine.topology import Layer
 from capslayers import CapsRoutingLayer, CapsLengthLayer
 from keras import backend as K
 from keras import utils as Kutils
-# import matplotlib.pyplot as plt
+import argparse
 
 class ZeroMask(Layer):
     """
@@ -96,7 +96,7 @@ class CapsNet():
             self.loss_m_minus))
         return K.mean(K.sum(loss_k, axis = 1))
     
-    def train(self, data_train, batch_size = 100, epochs = 1):
+    def train(self, data_train, batch_size = 100, epochs = 1, file_name = "trained_model_weights"):
         x_train, y_train = data_train
         if self.train_model is None:
             self.build_model()
@@ -104,6 +104,7 @@ class CapsNet():
             loss_weights = [1, self.reconstruction_loss_ratio], metrics = ['accuracy'])
         self.train_model.fit([x_train, y_train], [y_train, x_train], batch_size = batch_size,
             epochs = epochs, validation_split = 0.1)
+        self.train_model.save_weights(file_name + ".h5")
         return self.train_model
 
 def load_mnist():
@@ -116,6 +117,11 @@ def load_mnist():
     return (x_train, y_train), (x_test, y_test)
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description = "CapsNet Training")
+    parser.add_argument('--epochs', type = int, default = 1)
+    parser.add_argument('--filename', default = "trained_model_weights")
+    args = parser.parse_args()
+
     data_train, data_test = load_mnist()
     capsnet = CapsNet(input_shape = data_train[0].shape[1:])
-    capsnet.train(data_train)
+    capsnet.train(data_train, epochs = args.epochs)
