@@ -5,7 +5,7 @@ TensorFlow & Keras implementation of CapsNet by Sabour, Frosst, and Hinton
 Need python 3.5 or above. Install the following python packages: `tensorflow, keras, numpy`
 
 # Run
-`$ python capsnet.py --epochs 50`
+`$ python capsnet.py --epochs 10`
 
 # Reference
 * Sabour, Frosst, Hinton. Dynamic Routing Between Capsules. 2017. https://arxiv.org/abs/1710.09829
